@@ -14,7 +14,7 @@
         <CCNode :cc-node="currentNode" :update-key="updateKey"></CCNode>
         <div class="row" style="height: 2px;background-color: #1d1e21"></div>
         <template v-for="component in Utils.getComponents(currentNode)" :key="component.name">
-          <CCComponent v-if="component.name.startsWith('cc.')" :component="component.target" :name="component.name"
+          <CCComponent v-if="true" :component="component.target" :name="component.name"
             :update-key="updateKey"></CCComponent>
           <UserComponent v-else :component="component.target" :name="component.name" :update-key="updateKey">
           </UserComponent>

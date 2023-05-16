@@ -10,17 +10,82 @@ interface IComponentViewModel {
 
 export class ComponentManager {
     static getViewModel(name: string, componentGetter: any) {
-        switch (name) {
-            case 'cc.UITransform':
-                return new CCUITransformModel(componentGetter);
-            case 'cc.Label':
-                return new CCLabelModel();
-            case 'cc.Sprite':
-                return new CCSpriteModel();
-            default:
-                return null
+        console.log(name)
+        return createComponentViewModel(componentGetter);
+        // return createComponentViewModel(componentGetter);
+        // switch (name) {
+        //     case 'cc.UITransform':
+        //         return new AudoComponentViewModel(componentGetter);
+        //     case 'cc.Label':
+        //         return new CCLabelModel();
+        //     case 'cc.Sprite':
+        //         return new CCSpriteModel();
+        //     default:
+        //         return null;
+        // }
+    }
+}
+
+class AudoComponentViewModel implements IComponentViewModel {
+    componentGetter: any;
+    get props(): IComponentProp[] {
+        let component = this.componentGetter();
+
+        let props: IComponentProp[] = [];
+
+        for (let key in component) {
+            if (key.startsWith('_'))
+                continue;
+            props.push({ name: key, key: key, custom: true });
+        }
+        console.log(props)
+        return props;
+    };
+
+    constructor(componentGetter: any) {
+        this.componentGetter = componentGetter;
+    }
+}
+
+function createComponentViewModel(componentGetter: () => any) {
+
+    let component = componentGetter();
+
+    class Auto implements IComponentViewModel {
+        props: IComponentProp[] = [];
+    }
+
+    let auto = new Auto()
+    for (let key in component) {
+        if (key.startsWith('_'))
+            continue
+        let propValue = component[key]
+
+        console.log(typeof propValue)
+
+        switch (typeof propValue) {
+            case 'number':
+            case 'string':
+            case 'boolean':
+            case 'symbol':
+                auto.props.push({ name: key, key: key, custom: true });
+                Object.defineProperty(Auto.prototype, key, {
+                    get: function () {
+                        return propValue;
+                    },
+                    set: function (value) {
+                        component[key] = value;
+                    }
+                });
+                break;
+            case 'object':
+            case 'function':
+            case 'undefined':
+            case 'bigint':
         }
     }
+
+    return auto as IComponentViewModel;
 }
 
 class CCUITransformModel implements IComponentViewModel {
