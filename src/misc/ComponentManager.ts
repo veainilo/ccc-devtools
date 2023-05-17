@@ -25,17 +25,28 @@ export class ComponentManager {
 }
 
 function createComponentViewModel(componentGetter: () => object) {
+
+    let keys: string[] = []
+    keys = keys.concat(Object.getOwnPropertyNames(componentGetter().constructor.prototype))
+    keys = keys.concat(Object.getOwnPropertyNames(componentGetter()))
+
+    console.log(`keys = ${keys}`)
+
+
     class Auto implements IComponentViewModel {
         props: IComponentProp[] = [];
     }
 
     let auto = new Auto()
-    for (let key in componentGetter()) {
-        // if (key.startsWith('_'))
-        //     continue
+    for (let i = 1; i < keys.length; i++) {
+        let key = keys[i]
+        if (key.startsWith('_'))
+            continue
+        if (key == 'constructor')
+            continue
         let propValue = componentGetter()[key]
 
-        // console.log(`key = ${key} typeof propValue = ${typeof propValue}`)
+        console.log(`key = ${key} typeof propValue = ${typeof propValue}`)
 
         switch (typeof propValue) {
             case 'number':
@@ -72,8 +83,11 @@ function createComponentViewModel(componentGetter: () => object) {
 
                 break
             case 'function':
+                console.log(Object.getOwnPropertyNames(componentGetter()[key]))
+
                 let getFuncName = `get${key.charAt(0).toUpperCase() + key.slice(1)}`
                 let setFuncName = `get${key.charAt(0).toUpperCase() + key.slice(1)}`
+
                 if (componentGetter()[getFuncName]) {
                     key = key.substring(3)
                     auto.props.push({ name: key, key: key, custom: true });
