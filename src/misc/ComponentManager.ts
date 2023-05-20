@@ -10,58 +10,43 @@ interface IComponentViewModel {
 
 export class ComponentManager {
     static getViewModel(name: string, componentGetter: any) {
-        console.log(name)
-        return createComponentViewModel(componentGetter);
-        // return createComponentViewModel(componentGetter);
-        // switch (name) {
-        //     case 'cc.UITransform':
-        //         return new AudoComponentViewModel(componentGetter);
-        //     case 'cc.Label':
-        //         return new CCLabelModel();
-        //     case 'cc.Sprite':
-        //         return new CCSpriteModel();
-        //     default:
-        //         return null;
-        // }
-    }
-}
-
-class AudoComponentViewModel implements IComponentViewModel {
-    componentGetter: any;
-    get props(): IComponentProp[] {
-        let component = this.componentGetter();
-
-        let props: IComponentProp[] = [];
-
-        for (let key in component) {
-            if (key.startsWith('_'))
-                continue;
-            props.push({ name: key, key: key, custom: true });
+        // console.log(name)
+        switch (name) {
+            case 'cc.UITransform':
+                return new CCUITransformModel(componentGetter);
+            case 'cc.Label':
+                return new CCLabelModel();
+            case 'cc.Sprite':
+                return new CCSpriteModel();
+            default:
+                return createComponentViewModel(componentGetter);;
         }
-        console.log(props)
-        return props;
-    };
-
-    constructor(componentGetter: any) {
-        this.componentGetter = componentGetter;
     }
 }
 
-function createComponentViewModel(componentGetter: () => any) {
+function createComponentViewModel(componentGetter: () => object) {
 
-    let component = componentGetter();
+    let keys: string[] = []
+    keys = keys.concat(Object.getOwnPropertyNames(componentGetter().constructor.prototype))
+    keys = keys.concat(Object.getOwnPropertyNames(componentGetter()))
+
+    console.log(`keys = ${keys}`)
+
 
     class Auto implements IComponentViewModel {
         props: IComponentProp[] = [];
     }
 
     let auto = new Auto()
-    for (let key in component) {
+    for (let i = 1; i < keys.length; i++) {
+        let key = keys[i]
         if (key.startsWith('_'))
             continue
-        let propValue = component[key]
+        if (key == 'constructor')
+            continue
+        let propValue = componentGetter()[key]
 
-        console.log(typeof propValue)
+        console.log(`key = ${key} typeof propValue = ${typeof propValue}`)
 
         switch (typeof propValue) {
             case 'number':
@@ -71,15 +56,51 @@ function createComponentViewModel(componentGetter: () => any) {
                 auto.props.push({ name: key, key: key, custom: true });
                 Object.defineProperty(Auto.prototype, key, {
                     get: function () {
-                        return propValue;
+                        return componentGetter()[key];
                     },
                     set: function (value) {
-                        component[key] = value;
+                        componentGetter()[key] = value;
                     }
                 });
                 break;
             case 'object':
+                if (key != 'node') {
+                    let child = createComponentViewModel(() => {
+                        return componentGetter()[key]
+                    })
+                    child.props.forEach(prop => {
+                        auto.props.push({ name: `${key}.${prop.name}`, key: `${key}.${prop.key}`, custom: true });
+                        Object.defineProperty(Auto.prototype, `${key}.${prop.key}`, {
+                            get: function () {
+                                return child[prop.key];
+                            },
+                            set: function (value) {
+                                child[prop.key] = value
+                            }
+                        });
+                    })
+                }
+
+                break
             case 'function':
+                console.log(Object.getOwnPropertyNames(componentGetter()[key]))
+
+                let getFuncName = `get${key.charAt(0).toUpperCase() + key.slice(1)}`
+                let setFuncName = `get${key.charAt(0).toUpperCase() + key.slice(1)}`
+
+                if (componentGetter()[getFuncName]) {
+                    key = key.substring(3)
+                    auto.props.push({ name: key, key: key, custom: true });
+                    Object.defineProperty(Auto.prototype, key, {
+                        get: function () {
+                            return componentGetter()[getFuncName]?.call();
+                        },
+                        set: function (value) {
+                            componentGetter()[setFuncName]?.call(value);
+                        }
+                    });
+                }
+                break;
             case 'undefined':
             case 'bigint':
         }
