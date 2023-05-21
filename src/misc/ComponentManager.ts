@@ -72,7 +72,7 @@ function createComponentViewModel(componentGetter: () => object) {
                         auto.props.push({ name: `${key}.${prop.name}`, key: `${key}.${prop.key}`, custom: true });
                         Object.defineProperty(Auto.prototype, `${key}.${prop.key}`, {
                             get: function () {
-                                return child[prop.key];
+                                return prop.key in child ? child[prop.key] : null;
                             },
                             set: function (value) {
                                 child[prop.key] = value
