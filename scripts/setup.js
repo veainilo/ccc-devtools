@@ -10,7 +10,7 @@ const fse = require('fs-extra');
 const path = require('path');
 
 const localTemplatePath = path.join(__dirname, '../release/');
-const projectTemplatePath = 'C:\\work\\client';
+const projectTemplatePath = 'C:\\work\\survivor\\client';
 
 if (!fse.existsSync(projectTemplatePath)) {
     console.error('project path not exist');
