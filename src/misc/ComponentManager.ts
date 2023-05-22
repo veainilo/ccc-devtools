@@ -30,7 +30,7 @@ function createComponentViewModel(componentGetter: () => object) {
     keys = keys.concat(Object.getOwnPropertyNames(componentGetter().constructor.prototype))
     keys = keys.concat(Object.getOwnPropertyNames(componentGetter()))
 
-    console.log(`keys = ${keys}`)
+    // console.log(`keys = ${keys}`)
 
 
     class Auto implements IComponentViewModel {
@@ -45,8 +45,6 @@ function createComponentViewModel(componentGetter: () => object) {
         if (key == 'constructor')
             continue
         let propValue = componentGetter()[key]
-
-        console.log(`key = ${key} typeof propValue = ${typeof propValue}`)
 
         switch (typeof propValue) {
             case 'number':
@@ -72,7 +70,7 @@ function createComponentViewModel(componentGetter: () => object) {
                         auto.props.push({ name: `${key}.${prop.name}`, key: `${key}.${prop.key}`, custom: true });
                         Object.defineProperty(Auto.prototype, `${key}.${prop.key}`, {
                             get: function () {
-                                return child[prop.key];
+                                return prop.key in child ? child[prop.key] : null;
                             },
                             set: function (value) {
                                 child[prop.key] = value
@@ -83,26 +81,10 @@ function createComponentViewModel(componentGetter: () => object) {
 
                 break
             case 'function':
-                console.log(Object.getOwnPropertyNames(componentGetter()[key]))
-
-                let getFuncName = `get${key.charAt(0).toUpperCase() + key.slice(1)}`
-                let setFuncName = `get${key.charAt(0).toUpperCase() + key.slice(1)}`
-
-                if (componentGetter()[getFuncName]) {
-                    key = key.substring(3)
-                    auto.props.push({ name: key, key: key, custom: true });
-                    Object.defineProperty(Auto.prototype, key, {
-                        get: function () {
-                            return componentGetter()[getFuncName]?.call();
-                        },
-                        set: function (value) {
-                            componentGetter()[setFuncName]?.call(value);
-                        }
-                    });
-                }
-                break;
             case 'undefined':
             case 'bigint':
+            default:
+                break
         }
     }
 
